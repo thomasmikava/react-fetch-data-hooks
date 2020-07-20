@@ -24,9 +24,11 @@ type DepsInfoHook = <T extends readonly any[]>(
 export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	resourceKey,
 	dependenciesInfoHook: useDependenciesInfo = defaultDependenciesInfo,
+	defaultIsIdentificationKnownFn,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
+	defaultIsIdentificationKnownFn?: (deps: readonly any[]) => boolean;
 }) => {
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type FinalData<Data> = DefaultKey extends string
@@ -135,7 +137,12 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 
 		const currentVersion = depsInfo.getVersion();
 
-		const isIdentificationKnown = args.length === 1 ? true : !!args[0];
+		const isIdentificationKnown =
+			args.length === 1
+				? defaultIsIdentificationKnownFn
+					? defaultIsIdentificationKnownFn(dependencies)
+					: true
+				: !!args[0];
 
 		useEffect(() => {
 			if (!isIdentificationKnown) return;
@@ -171,13 +178,16 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 export const createFetchHook = <DefaultKey extends string | null>({
 	resourceKey,
 	dependenciesInfoHook = defaultDependenciesInfo,
+	defaultIsIdentificationKnownFn,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
+	defaultIsIdentificationKnownFn?: (deps: readonly any[]) => boolean;
 }) => {
 	const useResourceLoading = createResourceLoadingHook({
 		resourceKey,
 		dependenciesInfoHook,
+		defaultIsIdentificationKnownFn,
 	});
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type FinalData<Data> = DefaultKey extends string
