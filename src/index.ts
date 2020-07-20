@@ -46,7 +46,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 			isIdentificationKnown: boolean,
 			dependencies: Deps
 		): ResourceLoading<FinalData<Data>, () => void, any>;
-		useResourceLoading<Data extends DataExt, Deps extends readonly any[]>(
+		<Data extends DataExt, Deps extends readonly any[]>(
 			args: {
 				resource: Data | null | undefined;
 				fetch: (
