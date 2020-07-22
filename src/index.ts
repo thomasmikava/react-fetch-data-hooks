@@ -60,17 +60,13 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 		): ResourceLoading<FinalData<Data>, () => void, any>;
 		<Data extends DataExt, Deps extends readonly any[]>(
 			resource: Data | null | undefined,
-			fetch: (
-				args: CurrentState<Deps>
-			) => undefined | Promise<unknown>,
+			fetch: (args: CurrentState<Deps>) => undefined | Promise<unknown>,
 			isIdentificationKnown: boolean,
 			dependencies: Deps
 		): ResourceLoading<FinalData<Data>, () => void, any>;
 		<Data extends DataExt, Deps extends readonly any[]>(
 			resource: Data | null | undefined,
-			fetch: (
-				args: CurrentState<Deps>
-			) => undefined | Promise<unknown>,
+			fetch: (args: CurrentState<Deps>) => undefined | Promise<unknown>,
 			dependencies: Deps
 		): ResourceLoading<FinalData<Data>, () => void, any>;
 	};
@@ -78,14 +74,15 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	const useResourceLoading: UseResourceLoading = (<
 		DOC extends DataExt,
 		Deps extends readonly any[]
-	>(...args: any[]
+	>(
+		...args: any[]
 	) => {
 		const {
 			resource,
 			forcefullyFetch,
 			fetch,
 			isIdentificationKnown: passedIsIdentificationKnown,
-			dependencies
+			dependencies,
 		} = decipherUseResourceLoadingArgs<DOC, Deps>(args);
 
 		const [error, setError] = useState<any>(null);
@@ -172,11 +169,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 			if (!depsInfo.isStableVersion()) {
 				getResourceRef.current();
 			}
-		}, [
-			currentVersion,
-			isIdentificationKnown,
-			forcefullyFetchVersion,
-		]);
+		}, [currentVersion, isIdentificationKnown, forcefullyFetchVersion]);
 
 		const fetched = depsInfo.isStableVersion();
 
@@ -202,16 +195,19 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	return useResourceLoading;
 };
 
-export const createFetchHook = <DefaultKey extends string | null, SetResourceKey extends string | undefined = undefined>({
+export const createFetchHook = <
+	DefaultKey extends string | null,
+	SetResourceKey extends string | undefined = undefined
+>({
 	resourceKey,
 	dependenciesInfoHook = defaultDependenciesInfo,
 	defaultIsIdentificationKnownFn,
-	dangerouslySetResourceKey: setResourceKey
+	dangerouslySetResourceKey: setResourceKey,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
 	defaultIsIdentificationKnownFn?: (deps: readonly any[]) => boolean;
-	dangerouslySetResourceKey?: SetResourceKey
+	dangerouslySetResourceKey?: SetResourceKey;
 }) => {
 	const useResourceLoading = createResourceLoadingHook({
 		resourceKey: setResourceKey ? null : resourceKey,
@@ -220,10 +216,12 @@ export const createFetchHook = <DefaultKey extends string | null, SetResourceKey
 		defaultForcefullyFetchFn: () => true,
 	});
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
-	type Additional<Data> = SetResourceKey extends string ? { [key in SetResourceKey]: Dispatch<SetStateAction<Data>> } : {};
+	type Additional<Data> = SetResourceKey extends string
+		? { [key in SetResourceKey]: Dispatch<SetStateAction<Data>> }
+		: {};
 	type FinalData<Data> = DefaultKey extends string
-		? ({ [key in DefaultKey]: Data } & Additional<Data>)
-		: (Data & Additional<Data>);
+		? { [key in DefaultKey]: Data } & Additional<Data>
+		: Data & Additional<Data>;
 
 	type UseFetch = {
 		<Data extends DataExt, Deps extends readonly any[]>(
@@ -248,8 +246,16 @@ export const createFetchHook = <DefaultKey extends string | null, SetResourceKey
 
 		const resource = useMemo(() => {
 			if (!setResourceKey) return rawResource;
-			if (resourceKey === null) return { [setResourceKey as string]: setRawResource, ...rawResource};
-			return { [setResourceKey as string]: setRawResource, [resourceKey as string]: rawResource };
+			if (resourceKey === null) {
+				return {
+					[setResourceKey as string]: setRawResource,
+					...rawResource,
+				};
+			}
+			return {
+				[setResourceKey as string]: setRawResource,
+				[resourceKey as string]: rawResource,
+			};
 		}, [rawResource]);
 
 		return useResourceLoading(
@@ -285,11 +291,14 @@ const useForceUpdate = () => {
 	return forceUpdate as () => void;
 };
 
+const EMPTY_STR = "G9#rA.U.'6?9[`U3.A8yXq*8z@";
 const usePivotVersion = <T>(value: T, pivotValue: T): number => {
 	const version = useRef(0);
-	if (value === pivotValue) {
+	const oldValue = useRef<any>(EMPTY_STR);
+	if (value === pivotValue && (oldValue.current !== value)) {
 		version.current++;
 	}
+	oldValue.current = value;
 	return version.current;
 };
 
@@ -299,7 +308,6 @@ const defaultProvidedForcefullyFetchFn = (resource: any): boolean => {
 
 type SetStateAction<S> = S | ((prevState: S) => S);
 type Dispatch<A> = (value: A) => void;
-
 
 const decipherUseResourceLoadingArgs = <DOC, Deps>(args: any[]) => {
 	let resource: DOC | null | undefined;
@@ -322,5 +330,11 @@ const decipherUseResourceLoadingArgs = <DOC, Deps>(args: any[]) => {
 		}
 	}
 	const dependencies = args[args.length - 1];
-	return { resource, dependencies, fetch, forcefullyFetch, isIdentificationKnown }
-}
+	return {
+		resource,
+		dependencies,
+		fetch,
+		forcefullyFetch,
+		isIdentificationKnown,
+	};
+};
