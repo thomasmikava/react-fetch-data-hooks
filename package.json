@@ -17,7 +17,7 @@
   "author": "Temuri Mikava",
   "license": "MIT",
   "dependencies": {
-    "react-dependency-hooks": "^0.0.1"
+    "react-dependency-hooks": "^0.0.3"
   },
   "peerDependencies": {
     "react": ">=16.8.0"
