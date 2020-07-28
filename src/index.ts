@@ -118,10 +118,6 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 			finalForcefullyFetch,
 			true
 		);
-		if ((window as any).sadsad) {
-			console.log("isFirstCall", isFirstCall);
-			console.log("finalForcefullyFetch", finalForcefullyFetch, forcefullyFetchVersion);
-		}
 
 		if (depsInfo.getStableVersion() === 0 && forcefullyFetchVersion === 0) {
 			depsInfo.setAsStable();
