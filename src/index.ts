@@ -99,7 +99,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 		const errorRef = useRef(error);
 		errorRef.current = error;
 
-		const fetchRef = useRef();
+		const fetchRef = useRef<any>();
 		const isFirstCall = !fetchRef.current;
 		fetchRef.current = fetch;
 
@@ -133,7 +133,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 				getLastDependencies: () => depsInfo.getLastDependencies(),
 			};
 
-			const promise: Promise<unknown> | undefined = fetchRef.current(
+			const promise: Promise<unknown> | undefined = fetchRef.current!(
 				currentState
 			);
 
