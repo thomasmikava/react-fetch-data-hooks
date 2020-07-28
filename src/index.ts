@@ -9,6 +9,11 @@ interface CurrentState<Deps extends any> {
 
 const defaultDependenciesInfo = createDependenciesInfoHook();
 
+interface ForcefullyFetchHelper {
+	isFirstCall: boolean;
+	isMounted: boolean;
+}
+
 type DepsInfoHook = <T extends readonly any[]>(
 	...args: T
 ) => {
@@ -30,7 +35,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
 	defaultIsIdentificationKnownFn?: (deps: readonly any[]) => boolean;
-	defaultForcefullyFetchFn?: (resource: any) => boolean;
+	defaultForcefullyFetchFn?: (resource: any, helper: ForcefullyFetchHelper) => boolean;
 }) => {
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type FinalData<Data> = DefaultKey extends string
@@ -94,23 +99,29 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 		const errorRef = useRef(error);
 		errorRef.current = error;
 
-		const fetchRef = useRef(fetch);
+		const fetchRef = useRef();
+		const isFirstCall = !fetchRef.current;
 		fetchRef.current = fetch;
 
 		const isMountedRef = useMountInfo();
+		const isMounted = isMountedRef.current;
 
 		const depsInfo = useDependenciesInfo(...dependencies);
 
 		const finalForcefullyFetch =
 			forcefullyFetch === undefined
 				? defaultForcefullyFetchFn
-					? defaultForcefullyFetchFn(resource)
+					? defaultForcefullyFetchFn(resource, { isFirstCall, isMounted })
 					: false
 				: forcefullyFetch;
 		const forcefullyFetchVersion = usePivotVersion(
 			finalForcefullyFetch,
 			true
 		);
+		if ((window as any).sadsad) {
+			console.log("isFirstCall", isFirstCall);
+			console.log("finalForcefullyFetch", finalForcefullyFetch, forcefullyFetchVersion);
+		}
 
 		if (depsInfo.getStableVersion() === 0 && forcefullyFetchVersion === 0) {
 			depsInfo.setAsStable();
@@ -165,9 +176,13 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 				: passedIsIdentificationKnown;
 
 		useEffect(() => {
+			isMountedRef.current = true;
 			if (!isIdentificationKnown) return;
 			if (!depsInfo.isStableVersion()) {
 				getResourceRef.current();
+			} else {
+				depsInfo.unsafelyIncrementVersion();
+				forceUpdate();
 			}
 		}, [currentVersion, isIdentificationKnown, forcefullyFetchVersion]);
 
@@ -277,10 +292,11 @@ export const createFetchHook = <
 };
 
 const useMountInfo = () => {
-	const isMountedRef = useRef(true);
+	const isMountedRef = useRef(false);
 	useEffect(() => {
+		isMountedRef.current = true;
 		return () => {
-			isMountedRef.current = true;
+			isMountedRef.current = false;
 		};
 	}, []);
 	return isMountedRef;
@@ -295,7 +311,7 @@ const EMPTY_STR = "G9#rA.U.'6?9[`U3.A8yXq*8z@";
 const usePivotVersion = <T>(value: T, pivotValue: T): number => {
 	const version = useRef(0);
 	const oldValue = useRef<any>(EMPTY_STR);
-	if (value === pivotValue && (oldValue.current !== value)) {
+	if (value === pivotValue && oldValue.current !== value) {
 		version.current++;
 	}
 	oldValue.current = value;
