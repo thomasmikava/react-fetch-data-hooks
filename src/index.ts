@@ -32,6 +32,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	defaultIsIdentificationKnownFn,
 	defaultForcefullyFetchFn = defaultProvidedForcefullyFetchFn,
 	finalTransformationFn,
+	fetchTransformer,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
@@ -43,6 +44,11 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	finalTransformationFn?: (
 		data: ResourceLoading<Record<any, any>, () => void, any>
 	) => ResourceLoading<Record<any, any>, () => void, any>;
+	fetchTransformer?: (fn: (
+		args: CurrentState<unknown>
+	) => undefined | Promise<unknown>) => ((
+		args: CurrentState<unknown>
+	) => undefined | Promise<unknown>)
 }) => {
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type FinalData<Data> = DefaultKey extends string
@@ -143,7 +149,8 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 				getLastDependencies: () => depsInfo.getLastDependencies(),
 			};
 
-			const promise: Promise<unknown> | undefined = fetchRef.current!(
+			const fetchFn: any = fetchTransformer ? fetchTransformer(fetchRef.current!) : fetchRef.current!;
+			const promise: Promise<unknown> | undefined = fetchFn(
 				currentState
 			);
 
@@ -228,6 +235,7 @@ export const createFetchHook = <
 	defaultIsIdentificationKnownFn,
 	dangerouslySetResourceKey: setResourceKey,
 	finalTransformationFn,
+	fetchTransformer,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
@@ -236,6 +244,11 @@ export const createFetchHook = <
 	finalTransformationFn?: (
 		data: ResourceLoading<Record<any, any>, () => void, any>
 	) => ResourceLoading<Record<any, any>, () => void, any>;
+	fetchTransformer?: (fn: (
+		args: CurrentState<unknown>
+	) => undefined | Promise<unknown>) => (
+		args: CurrentState<unknown>
+	) => undefined | Promise<unknown>
 }) => {
 	const useResourceLoading = createResourceLoadingHook({
 		resourceKey: setResourceKey ? null : resourceKey,
@@ -243,6 +256,7 @@ export const createFetchHook = <
 		defaultIsIdentificationKnownFn,
 		defaultForcefullyFetchFn: () => true,
 		finalTransformationFn,
+		fetchTransformer,
 	});
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type Additional<Data> = SetResourceKey extends string
