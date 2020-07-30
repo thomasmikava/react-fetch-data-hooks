@@ -31,11 +31,18 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	dependenciesInfoHook: useDependenciesInfo = defaultDependenciesInfo,
 	defaultIsIdentificationKnownFn,
 	defaultForcefullyFetchFn = defaultProvidedForcefullyFetchFn,
+	finalTransformationFn,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
 	defaultIsIdentificationKnownFn?: (deps: readonly any[]) => boolean;
-	defaultForcefullyFetchFn?: (resource: any, helper: ForcefullyFetchHelper) => boolean;
+	defaultForcefullyFetchFn?: (
+		resource: any,
+		helper: ForcefullyFetchHelper
+	) => boolean;
+	finalTransformationFn?: (
+		data: ResourceLoading<Record<any, any>, () => void, any>
+	) => ResourceLoading<Record<any, any>, () => void, any>;
 }) => {
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type FinalData<Data> = DefaultKey extends string
@@ -111,7 +118,10 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 		const finalForcefullyFetch =
 			forcefullyFetch === undefined
 				? defaultForcefullyFetchFn
-					? defaultForcefullyFetchFn(resource, { isFirstCall, isMounted })
+					? defaultForcefullyFetchFn(resource, {
+							isFirstCall,
+							isMounted,
+					  })
 					: false
 				: forcefullyFetch;
 		const forcefullyFetchVersion = usePivotVersion(
@@ -192,7 +202,7 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 					? { [resourceKey as string]: resource }
 					: resource
 				: null) as Record<any, any> | null | undefined;
-			return getResourceLoadingInfo({
+			const resourceDoc = getResourceLoadingInfo({
 				resource: finalResource,
 				error: finalError,
 				loadAgain: () => {
@@ -201,6 +211,9 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 				},
 				isIdentificationKnown,
 			});
+			return finalTransformationFn
+				? finalTransformationFn(resourceDoc)
+				: resourceDoc;
 		}, [resource, fetched, isIdentificationKnown, error]);
 	}) as any;
 	return useResourceLoading;
@@ -214,17 +227,22 @@ export const createFetchHook = <
 	dependenciesInfoHook = defaultDependenciesInfo,
 	defaultIsIdentificationKnownFn,
 	dangerouslySetResourceKey: setResourceKey,
+	finalTransformationFn,
 }: {
 	resourceKey: DefaultKey;
 	dependenciesInfoHook?: DepsInfoHook;
 	defaultIsIdentificationKnownFn?: (deps: readonly any[]) => boolean;
 	dangerouslySetResourceKey?: SetResourceKey;
+	finalTransformationFn?: (
+		data: ResourceLoading<Record<any, any>, () => void, any>
+	) => ResourceLoading<Record<any, any>, () => void, any>;
 }) => {
 	const useResourceLoading = createResourceLoadingHook({
 		resourceKey: setResourceKey ? null : resourceKey,
 		dependenciesInfoHook,
 		defaultIsIdentificationKnownFn,
 		defaultForcefullyFetchFn: () => true,
+		finalTransformationFn,
 	});
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type Additional<Data> = SetResourceKey extends string
