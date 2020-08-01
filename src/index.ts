@@ -44,11 +44,9 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 	finalTransformationFn?: (
 		data: ResourceLoading<Record<any, any>, () => void, any>
 	) => ResourceLoading<Record<any, any>, () => void, any>;
-	fetchTransformer?: (fn: (
-		args: CurrentState<unknown>
-	) => undefined | Promise<unknown>) => ((
-		args: CurrentState<unknown>
-	) => undefined | Promise<unknown>)
+	fetchTransformer?: (
+		fn: (args: CurrentState<unknown>) => undefined | Promise<unknown>
+	) => (args: CurrentState<unknown>) => undefined | Promise<unknown>;
 }) => {
 	type DataExt = DefaultKey extends string ? any : Record<any, any>;
 	type FinalData<Data> = DefaultKey extends string
@@ -149,10 +147,10 @@ export const createResourceLoadingHook = <DefaultKey extends string | null>({
 				getLastDependencies: () => depsInfo.getLastDependencies(),
 			};
 
-			const fetchFn: any = fetchTransformer ? fetchTransformer(fetchRef.current!) : fetchRef.current!;
-			const promise: Promise<unknown> | undefined = fetchFn(
-				currentState
-			);
+			const fetchFn: any = fetchTransformer
+				? fetchTransformer(fetchRef.current!)
+				: fetchRef.current!;
+			const promise: Promise<unknown> | undefined = fetchFn(currentState);
 
 			if (!promise) {
 				depsInfo.setAsStable(version);
@@ -244,11 +242,9 @@ export const createFetchHook = <
 	finalTransformationFn?: (
 		data: ResourceLoading<Record<any, any>, () => void, any>
 	) => ResourceLoading<Record<any, any>, () => void, any>;
-	fetchTransformer?: (fn: (
-		args: CurrentState<unknown>
-	) => undefined | Promise<unknown>) => (
-		args: CurrentState<unknown>
-	) => undefined | Promise<unknown>
+	fetchTransformer?: (
+		fn: (args: CurrentState<unknown>) => undefined | Promise<unknown>
+	) => (args: CurrentState<unknown>) => undefined | Promise<unknown>;
 }) => {
 	const useResourceLoading = createResourceLoadingHook({
 		resourceKey: setResourceKey ? null : resourceKey,
@@ -363,14 +359,14 @@ const decipherUseResourceLoadingArgs = <DOC, Deps>(args: any[]) => {
 		resource = args[0];
 		fetch = args[1];
 		if (args.length === 4) {
-			isIdentificationKnown = !!args[3];
+			isIdentificationKnown = !!args[2];
 		}
 	} else {
 		resource = args[0].resource;
 		fetch = args[0].fetch;
 		forcefullyFetch = args[0].forcefullyFetch;
 		if (args.length === 3) {
-			isIdentificationKnown = !!args[2];
+			isIdentificationKnown = !!args[1];
 		}
 	}
 	const dependencies = args[args.length - 1];
